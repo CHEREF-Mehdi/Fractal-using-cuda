@@ -22,9 +22,6 @@ struct fractalLevel
 
 struct transformLevel
 {
-    arma::Mat<GLfloat> transf = {{1.0, 0.0, 0.0},
-                                 {0.0, 1.0, 0.0},
-                                 {0.0, 0.0, 1.0}};
     vector<int> trans;
     int iteration;
 };
@@ -123,29 +120,30 @@ void divideTriangleIterative(arma::Mat<GLfloat> trgl, vector<arma::Mat<GLfloat>>
 void getListTransform(arma::Mat<GLfloat> trgl, vector<arma::Mat<GLfloat>> TransfList, int iter)
 {
     stack<transformLevel> stk;
-    transformLevel level;
-    arma::Mat<GLfloat> t, tr = level.transf;
+    transformLevel level, l1, l2;
+    arma::Mat<GLfloat> t;
 
     while (true)
     {
-        transformLevel l;
         while (iter > 0)
         {
             iter--;
             level.iteration = iter;
-            l = level;
-            l.trans.push_back(2);
-            stk.push(l);
-            l = level;
-            l.trans.push_back(1);
-            stk.push(l);
-            l = level;
-            l.trans.push_back(1);
+            l2 = level;
+            l2.trans.push_back(2);
+            stk.push(l2);
+            l1 = level;
+            l1.trans.push_back(1);
+            stk.push(l1);
+            level.trans.push_back(0);
         }
-        for (auto i = l.trans.cbegin(); i != l.trans.cend(); ++i)
+
+        t = trgl;
+        for (auto i = level.trans.cbegin(); i != level.trans.cend(); ++i)
         {
+            t = TransfList[*i] * t;
         }
-        t = level.transf * trgl;
+
         t = t.t();
         int n_rows = t.n_rows;
         GLfloat **poly = toGLfloatPoints(t, n_rows);
@@ -158,7 +156,6 @@ void getListTransform(arma::Mat<GLfloat> trgl, vector<arma::Mat<GLfloat>> Transf
             level = stk.top();
             stk.pop();
             iter = level.iteration;
-            tr = level.transf;
         }
     }
 }
@@ -277,7 +274,6 @@ void keyboard(unsigned char key, int x, int y)
 
 void mouse(int button, int state, int x, int y)
 {
-
     if ((button == 3) || (button == 4)) // It's a wheel event
     {
         if (button == 3)
@@ -295,11 +291,13 @@ void mouse(int button, int state, int x, int y)
     }
     else
     { // normal button event
+        //if (button == GLUT_LEFT_BUTTON){   
+       
         if (state == GLUT_UP)
         {
             generateColors();
             display();
-        }
+        }        
     }
 }
 
