@@ -3,6 +3,7 @@
 #include <ctime>
 #include <armadillo>
 #include <cuda.h>
+#include <stack>
 
 //files.associations
 
@@ -11,6 +12,22 @@ using namespace std;
 // menu item
 #define MENU_SMOOTH 1
 #define MENU_FLAT 0
+
+struct fractalLevel
+{
+    vector<arma::Mat<GLfloat>> tList;
+    arma::Mat<GLfloat> trgl;
+    int iteration;
+};
+
+struct transformLevel
+{
+    arma::Mat<GLfloat> transf = {{1.0, 0.0, 0.0},
+                                 {0.0, 1.0, 0.0},
+                                 {0.0, 0.0, 1.0}};
+    vector<int> trans;
+    int iteration;
+};
 
 arma::Mat<GLfloat> Triangle = {{0.0, 0.0, 0.0},
                                {1.0, 0.0, 0.0},
@@ -61,9 +78,88 @@ void divideTriangle(arma::Mat<GLfloat> trgl, vector<arma::Mat<GLfloat>> TransfLi
     }
     else
     {
-        divideTriangle(transfMatList[0] * trgl, TransfList, iteration - 1);
-        divideTriangle(transfMatList[1] * trgl, TransfList, iteration - 1);
-        divideTriangle(transfMatList[2] * trgl, TransfList, iteration - 1);
+        divideTriangle(TransfList[0] * trgl, TransfList, iteration - 1);
+        divideTriangle(TransfList[1] * trgl, TransfList, iteration - 1);
+        divideTriangle(TransfList[2] * trgl, TransfList, iteration - 1);
+    }
+}
+
+void divideTriangleIterative(arma::Mat<GLfloat> trgl, vector<arma::Mat<GLfloat>> TransfList, int iter)
+{
+    stack<fractalLevel> stk;
+    fractalLevel level;
+    while (true)
+    {
+        while (iter > 0)
+        {
+            iter--;
+            level.iteration = iter;
+            //level.tList = TransfList;
+            level.trgl = TransfList[2] * trgl;
+            stk.push(level);
+            level.trgl = TransfList[1] * trgl;
+            stk.push(level);
+            trgl = TransfList[0] * trgl;
+        }
+
+        trgl = trgl.t();
+        int n_rows = trgl.n_rows;
+        GLfloat **poly = toGLfloatPoints(trgl, n_rows);
+        drawPolygone(poly, n_rows);
+
+        if (stk.empty())
+            break;
+        else
+        {
+            level = stk.top();
+            stk.pop();
+            trgl = level.trgl;
+            iter = level.iteration;
+            TransfList = level.tList;
+        }
+    }
+}
+
+void getListTransform(arma::Mat<GLfloat> trgl, vector<arma::Mat<GLfloat>> TransfList, int iter)
+{
+    stack<transformLevel> stk;
+    transformLevel level;
+    arma::Mat<GLfloat> t, tr = level.transf;
+
+    while (true)
+    {
+        transformLevel l;
+        while (iter > 0)
+        {
+            iter--;
+            level.iteration = iter;
+            l = level;
+            l.trans.push_back(2);
+            stk.push(l);
+            l = level;
+            l.trans.push_back(1);
+            stk.push(l);
+            l = level;
+            l.trans.push_back(1);
+        }
+        for (auto i = l.trans.cbegin(); i != l.trans.cend(); ++i)
+        {
+        }
+        t = level.transf * trgl;
+        t = t.t();
+        int n_rows = t.n_rows;
+        GLfloat **poly = toGLfloatPoints(t, n_rows);
+        drawPolygone(poly, n_rows);
+
+        if (stk.empty())
+            break;
+        else
+        {
+            level = stk.top();
+            stk.pop();
+            iter = level.iteration;
+            tr = level.transf;
+        }
     }
 }
 
@@ -74,7 +170,9 @@ void display()
     glLoadIdentity();
     glScalef(zoom, zoom, zoom);
     random(true);
-    divideTriangle(Triangle2, transfMatList, iterations);
+    //divideTriangle(Triangle2, transfMatList, iterations);
+    //divideTriangleIterative(Triangle2, transfMatList, iterations);
+    getListTransform(Triangle2, transfMatList, iterations);
     glFlush();
 }
 
