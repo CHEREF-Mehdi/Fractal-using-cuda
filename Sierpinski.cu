@@ -34,7 +34,7 @@ arma::Mat<GLfloat> Triangle2 = {{1.0, 0.0, 0.0},
                                 {0.0, 1.0, 0.0},
                                 {0.0, 0.0, 1.0}};
 
-vector<arma::Mat<GLfloat>> transfMatList{
+vector<arma::Mat<GLfloat>> transfMat{
     {{1.0, 0.5, 0.5},
      {0.0, 0.5, 0.0},
      {0.0, 0.0, 0.5}},
@@ -60,7 +60,6 @@ void mouse(int button, int state, int x, int y);
 void menu(int item);
 void display();
 void init();
-
 GLfloat **toGLfloatPoints(arma::Mat<GLfloat> armapoly, int n_row);
 void drawPolygone(GLfloat **poly, int n_row);
 
@@ -160,6 +159,60 @@ void getListTransform(arma::Mat<GLfloat> trgl, vector<arma::Mat<GLfloat>> Transf
     }
 }
 
+void getListTransform2(vector<vector<int>> &Tlist, int iter)
+{
+    stack<transformLevel> stk;
+    transformLevel level, l1, l2;
+    arma::Mat<GLfloat> t;
+
+    while (true)
+    {
+        while (iter > 0)
+        {
+            iter--;
+            level.iteration = iter;
+            l2 = level;
+            l2.trans.push_back(2);
+            stk.push(l2);
+            l1 = level;
+            l1.trans.push_back(1);
+            stk.push(l1);
+            level.trans.push_back(0);
+        }
+
+        Tlist.push_back(level.trans);
+
+        if (stk.empty())
+            break;
+        else
+        {
+            level = stk.top();
+            stk.pop();
+            iter = level.iteration;
+        }
+    }
+}
+
+void divideTriangleIterative2(arma::Mat<GLfloat> trgl, vector<arma::Mat<GLfloat>> TransfList, int iter)
+{
+    vector<vector<int>> Tlist;
+    arma::Mat<GLfloat> t;
+    getListTransform2(Tlist, iter);
+    for (int j = 0; j < Tlist.size(); j++)
+    {
+        t = trgl;
+        for (auto i = Tlist[j].cbegin(); i != Tlist[j].cend(); ++i)
+        {
+            t = TransfList[*i] * t;
+        }
+
+        t = t.t();
+        int n_rows = t.n_rows;
+        GLfloat **poly = toGLfloatPoints(t, n_rows);
+        drawPolygone(poly, n_rows);
+    }
+}
+
 void display()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -167,9 +220,10 @@ void display()
     glLoadIdentity();
     glScalef(zoom, zoom, zoom);
     random(true);
-    //divideTriangle(Triangle2, transfMatList, iterations);
-    //divideTriangleIterative(Triangle2, transfMatList, iterations);
-    getListTransform(Triangle2, transfMatList, iterations);
+    //divideTriangle(Triangle2, transfMat, iterations);
+    //divideTriangleIterative(Triangle2, transfMat, iterations);
+    //getListTransform(Triangle2, transfMat, iterations);
+    divideTriangleIterative2(Triangle2, transfMat, iterations);
     glFlush();
 }
 
@@ -291,13 +345,13 @@ void mouse(int button, int state, int x, int y)
     }
     else
     { // normal button event
-        //if (button == GLUT_LEFT_BUTTON){   
-       
+        //if (button == GLUT_LEFT_BUTTON){
+
         if (state == GLUT_UP)
         {
             generateColors();
             display();
-        }        
+        }
     }
 }
 
