@@ -26,7 +26,7 @@ void randomInts(int *a, int n)
   int i;
   for (i = 0; i < n; i++)
   {
-    a[i] = rand()%(10000-100 + 1) + 100;
+    a[i] = rand() % (10000 - 100 + 1) + 100;
   }
 }
 
@@ -34,12 +34,11 @@ void saveToFile(FILE *fp, int *a, int *b, int *c)
 {
   for (int i = 0; i < 10; i++)
   {
-    fprintf(fp, "%d + %d = %d\n", a[i], b[i],c[i]);
+    fprintf(fp, "%d + %d = %d\n", a[i], b[i], c[i]);
   }
 }
 
-__global__ 
-void add(int *a, int *b, int *c)
+__global__ void add(int *a, int *b, int *c)
 {
   int index = threadIdx.x + blockIdx.x * blockDim.x;
   c[index] = a[index] + b[index];
@@ -47,18 +46,12 @@ void add(int *a, int *b, int *c)
 
 int main(int argc, char **argv)
 {
-  
+
   cout << "Armadillo version: " << arma_version::as_string() << endl;
-  
-  
+
   int *a, *b, *c;
-  int *d_a, *d_b, *d_c; 
+  int *d_a, *d_b, *d_c;
   int size = N * sizeof(int);
-  
-  // Allocate space for device copies of a, b, c
-  cudaMalloc((void **)&d_a, size);
-  cudaMalloc((void **)&d_b, size);
-  cudaMalloc((void **)&d_c, size);
 
   // Setup input values
   a = (int *)malloc(size);
@@ -66,6 +59,12 @@ int main(int argc, char **argv)
   b = (int *)malloc(size);
   randomInts(b, N);
   c = (int *)malloc(size);
+
+  // Allocate space for device copies of a, b, c
+  cudaMalloc((void **)&d_a, size);
+  cudaMalloc((void **)&d_b, size);
+  cudaMalloc((void **)&d_c, size);
+
 
   // Copy inputs to device
   cudaMemcpy(d_a, a, size, cudaMemcpyHostToDevice);
@@ -79,8 +78,8 @@ int main(int argc, char **argv)
 
   FILE *fp;
 
-  fp = fopen("result.txt","w");
-  saveToFile(fp,a,b,c);
+  fp = fopen("result.txt", "w");
+  saveToFile(fp, a, b, c);
   fclose(fp);
 
   // Cleanup
