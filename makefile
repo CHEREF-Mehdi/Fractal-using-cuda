@@ -10,11 +10,11 @@ LIBARMADILO= -DARMA_DONT_USE_WRAPPER -lopenblas -llapack
 #opengl
 LIBOPENGL= -lGL -lGLEW -lGLU -lglut -lm
 
-# EXEC= DFS
-# SRC= DFS.cu 
+EXEC= DFS2
+SRC= DFS2.cu 
 
-EXEC= Sierpinski
-SRC= Sierpinski.cu 
+# EXEC= Sierpinski
+# SRC= Sierpinski.cu 
 
 
 $(EXEC): $(SRC)

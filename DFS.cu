@@ -55,7 +55,7 @@ cudaError_t DFS(short*, size_t, size_t, size_t, size_t);
 int main()
 {
 	const size_t dim = 3; //M
-	const size_t level = 12; //N
+	const size_t level = 3; //N
 
 	short* combinations;
 	size_t itr_size = pow(dim, level) * level;
@@ -121,10 +121,10 @@ cudaError_t DFS(short* combinations, size_t dim, size_t level, size_t combinatio
 	    //goto Error;
 	}
 	
-	// for (int i = 0; i < itr_size; i++) {
-	// 	if(i%size_Col==0) std::cout << std::endl;
-	// 	std::cout << combinations[i] << " ";
-	// }
+	for (int i = 0; i < itr_size; i++) {
+		if(i%size_Col==0) std::cout << std::endl;
+		std::cout << combinations[i] << " ";
+	}
 	
 
 	//std::cout << "\n\nEnd.\n";
