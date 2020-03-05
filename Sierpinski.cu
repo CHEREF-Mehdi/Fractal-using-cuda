@@ -7,9 +7,6 @@
 #include <math.h>
 #include <iostream>
 
-#ifdef __INTELLISENSE__
-void __syncthreads();
-#endif
 
 //files.associations
 
@@ -19,10 +16,6 @@ using namespace std::chrono;
 // menu item
 #define MENU_SMOOTH 1
 #define MENU_FLAT 0
-
-// N => iterations M => nbr of transformations
-#define N 20
-#define M 3
 
 struct fractalLevel
 {
@@ -58,7 +51,7 @@ vector<arma::Mat<GLfloat>> transfMat{
 
 double colors[1000] = {0};
 
-int iterations = 9, maxIteration = 200;
+int iterations = 11, maxIteration = 15;
 double zoom = 1;
 int shading = GL_SMOOTH;
 
@@ -164,7 +157,7 @@ void dividePolygoneIterative2(arma::Mat<GLfloat> trgl, vector<arma::Mat<GLfloat>
 
     getListTransform(Tlist, TransfList.size(), iter);
 
-    /*for (int j = 0; j < Tlist.size(); j++)
+    for (int j = 0; j < Tlist.size(); j++)
     {
         t = trgl;
         for (auto i = Tlist[j].cbegin(); i != Tlist[j].cend(); ++i)
@@ -172,46 +165,12 @@ void dividePolygoneIterative2(arma::Mat<GLfloat> trgl, vector<arma::Mat<GLfloat>
             t = TransfList[*i] * t;
         }
 
-        displayPolygone(t);
-    }*/
+        //displayPolygone(t);
+    }
 }
-
-__global__ void fillByLevel(int* result, size_t dim, size_t level, size_t fill_size, size_t fill_offset, size_t global_offset) {
-	if (level <= 0) return;
-	//fill buffer result by level
-	int value = threadIdx.x;
-	size_t start = fill_size * value + fill_offset + global_offset;
-	size_t end = start + fill_size;
-	//printf("start: %d == end: %d\n", start, end);
-	for (size_t i = start; i < end; i++) {
-		result[i] = value;
-		//printf("%d\n", start);
-	}
-	
-	fillByLevel <<<1, dim >> > (result, dim, level - 1, fill_size / dim, start, global_offset);
-	
-}
-
-__global__ void DFSKernel(int *result, size_t dim, size_t level, size_t _itr_size) {
-	int value = threadIdx.x;
-	size_t fill_size = powf(dim, level - 1);
-	size_t start = fill_size * value;
-	size_t end = start + fill_size;
-	//printf("start: %d == end: %d\n", start, end);
-	for (size_t i = start; i < end; i++) {
-		result[i] = value;
-		//printf("%d\n", start);
-	}
-    
-	fillByLevel << <1, dim >> > (result, dim, level - 1, fill_size / dim, start, powf(dim, level));
-	__syncthreads();
-}
-
-cudaError_t DFS(int*, size_t, size_t, size_t, size_t);
 
 void display()
-{
-    
+{    
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -221,7 +180,7 @@ void display()
     cout <<"\n N = " << iterations <<"\n" << endl;
 
     auto start = high_resolution_clock::now(); 
-    dividePolygone(Triangle, transfMat, iterations);
+    dividePolygone(Triangle2, transfMat, iterations);
     auto stop = high_resolution_clock::now(); 
     auto duration = duration_cast<microseconds>(stop - start)*pow(10,-6);
     cout <<"Recursive : " << duration.count() << endl;
@@ -232,36 +191,17 @@ void display()
     duration = duration_cast<microseconds>(stop - start)*pow(10,-6);
     cout <<"Iterative 1 : " << duration.count() << endl;
 
-    start = high_resolution_clock::now(); 
+    start = high_resolution_clock::now();
     dividePolygoneIterative2(Triangle2, transfMat, iterations);
-    stop = high_resolution_clock::now(); 
+    stop = high_resolution_clock::now();
     duration = duration_cast<microseconds>(stop - start)*pow(10,-6);
-    cout <<"Iterative 2 : " << duration.count() << endl;    
+    cout <<"Iterative 2 : " << duration.count() << endl; 
 
     glFlush();
 }
 
 int main(int argc, char **argv)
 {
-    const size_t dim = M; //M
-	const size_t level = iterations; //N
-
-	int* combinations;
-	size_t itr_size = pow(dim, level) * level;    
-	size_t combinations_size = sizeof(int) * itr_size;
-    combinations = (int*)malloc(combinations_size);
-
-    if(combinations == NULL) printf("\n\n ############ Memory allocation failed ############\n\n");		
-	else
-	{
-		
-        auto start = high_resolution_clock::now(); 
-        DFS(combinations, dim, level, combinations_size, itr_size);
-        auto stop = high_resolution_clock::now(); 
-        auto duration = duration_cast<microseconds>(stop - start)*pow(10,-6);
-        cout <<"cuda : " << duration.count() << endl;
-	}
-
     generateColors();
 
     glutInit(&argc, argv);
@@ -285,54 +225,6 @@ int main(int argc, char **argv)
     glutMainLoop();
 
     return 0;
-}
-
-cudaError_t DFS(int* combinations, size_t dim, size_t level, size_t combinations_size, size_t itr_size) {
-	int* result = 0;
-	cudaError_t cudaStatus;
-
-	cudaStatus = cudaSetDevice(0);
-	if (cudaStatus != cudaSuccess) {
-		//print error message
-		goto Error;
-	}
-
-	cudaStatus = cudaMalloc((void**)& result, combinations_size);
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMalloc failed: %s\n", cudaGetErrorString(cudaStatus));
-		goto Error;
-	}
-
-	DFSKernel<<<1, dim >>> (result, dim, level, itr_size);
-
-	cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) {
-	    fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
-	    goto Error;
-	}
-
-	cudaStatus = cudaDeviceSynchronize();
-	if (cudaStatus != cudaSuccess) {
-	    fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
-	    goto Error;
-	}
-
-	cudaStatus = cudaMemcpy(combinations, result, combinations_size, cudaMemcpyDeviceToHost);
-	if (cudaStatus != cudaSuccess) {
-	    fprintf(stderr, "cudaMemcpy failed!");
-	    goto Error;
-	}
-
-	// for (int i = 0; i < itr_size; i++) {
-	// 	std::cout << combinations[i] << "\n";
-	// }
-
-	// std::cout << "End.";
-
-    Error:
-	    cudaFree(result);
-
-	return cudaStatus;
 }
 
 void displayPolygone(arma::Mat<GLfloat> trgl)

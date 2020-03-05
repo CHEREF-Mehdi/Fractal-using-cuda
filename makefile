@@ -17,8 +17,8 @@ SRC= vboCuda.cu
 #EXEC= openGlCuKernel
 #SRC= openGlCuKernel.cu
 
-# EXEC= Sierpinski
-# SRC= Sierpinski.cu 
+#EXEC= Sierpinski
+#SRC= Sierpinski.cu 
 
 
 $(EXEC): $(SRC)
