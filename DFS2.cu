@@ -26,7 +26,7 @@ vector<arma::Mat<float>> transfMat{
                                     {0.5, 0.5, 1.0}}
                                     };
 const unsigned short dim=3; //nbr transformation
-const short level=7; //nbr iteration
+const short level=3; //nbr iteration
 
 const unsigned short sizeV=9;
 #define sizeTL (27)
@@ -118,11 +118,11 @@ int main()
 			offset=blocks*maxThreadPerblock;
 		}
 	}
-	/*arma::Mat<float> res;
+	arma::Mat<float> res;
 	res=transfMat[0]*Triangle;
 	res=transfMat[0]*res;
 	res=transfMat[0]*res;
-	std::cout << res << std::endl;*/
+	std::cout << res << std::endl;
 
 	std::cout << "Iteration : " << level << std::endl;
 	std::cout << "nbr Transformations : " << dim << std::endl;	

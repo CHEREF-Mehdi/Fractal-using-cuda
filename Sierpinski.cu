@@ -5,6 +5,7 @@
 #include <stack>
 #include <chrono> 
 #include <math.h>
+#include <iostream>
 
 #ifdef __INTELLISENSE__
 void __syncthreads();
@@ -57,7 +58,7 @@ vector<arma::Mat<GLfloat>> transfMat{
 
 double colors[1000] = {0};
 
-int iterations = 10, maxIteration = 200;
+int iterations = 9, maxIteration = 200;
 double zoom = 1;
 int shading = GL_SMOOTH;
 
@@ -107,7 +108,7 @@ void dividePolygoneIterative(arma::Mat<GLfloat> poly, vector<arma::Mat<GLfloat>>
             poly = TransfList[0] * poly;
         }
 
-        //displayPolygone(poly);
+        displayPolygone(poly);
 
         if (stk.empty())
             break;
@@ -235,9 +236,7 @@ void display()
     dividePolygoneIterative2(Triangle2, transfMat, iterations);
     stop = high_resolution_clock::now(); 
     duration = duration_cast<microseconds>(stop - start)*pow(10,-6);
-    cout <<"Iterative 2 : " << duration.count() << endl;
-
-    
+    cout <<"Iterative 2 : " << duration.count() << endl;    
 
     glFlush();
 }
