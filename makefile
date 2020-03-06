@@ -10,12 +10,12 @@ LIBARMADILO= -DARMA_DONT_USE_WRAPPER -lopenblas -llapack
 #opengl
 LIBOPENGL= -lGL -lGLEW -lGLU -lglut -lm -lglfw
 
-EXEC= vboCuda
-SRC= vboCuda.cu
+#EXEC= vboCuda
+#SRC= vboCuda.cu
 
 
-#EXEC= openGlCuKernel
-#SRC= openGlCuKernel.cu
+EXEC= DFS
+SRC= DFS.cu
 
 #EXEC= Sierpinski
 #SRC= Sierpinski.cu 
