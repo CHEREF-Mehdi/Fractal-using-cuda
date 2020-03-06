@@ -17,7 +17,7 @@ GLuint points_vbo;
 float* d_vbo_ptr = 0;
 
 const unsigned short dim=3; //nbr transformation
-const short level=12; //nbr iteration
+const short level=11; //nbr iteration
 const unsigned short sizeV=9; //size of polygone 
 #define sizeTL (27) //size of transformation
 

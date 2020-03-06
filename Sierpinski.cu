@@ -68,20 +68,17 @@ GLfloat **toGLfloatPoints(arma::Mat<GLfloat> armapoly, int n_row);
 void drawPolygone(GLfloat **poly, int n_row);
 void displayPolygone(arma::Mat<GLfloat> trgl);
 
-void dividePolygone(arma::Mat<GLfloat> poly, vector<arma::Mat<GLfloat>> TransfList, int iteration)
+void ifsRecursif(arma::Mat<GLfloat> poly, vector<arma::Mat<GLfloat>> TransfList, int iteration)
 {
-    if (iteration == 0)
-    {
-        //displayPolygone(poly);
-    }
+    if (iteration == 0) displayPolygone(poly);    
     else
     {
         for (int i = 0; i < TransfList.size(); i++)
-            dividePolygone(TransfList[i] * poly, TransfList, iteration - 1);
+            ifsRecursif(TransfList[i] * poly, TransfList, iteration - 1);
     }
 }
 
-void dividePolygoneIterative(arma::Mat<GLfloat> poly, vector<arma::Mat<GLfloat>> TransfList, int iter)
+void ifsIteratif1(arma::Mat<GLfloat> poly, vector<arma::Mat<GLfloat>> TransfList, int iter)
 {
     stack<fractalLevel> stk;
     fractalLevel level;
@@ -150,7 +147,7 @@ void getListTransform(vector<vector<int>> &Tlist, int TlistSize, int iter)
     }
 }
 
-void dividePolygoneIterative2(arma::Mat<GLfloat> trgl, vector<arma::Mat<GLfloat>> TransfList, int iter)
+void ifsIteratif2(arma::Mat<GLfloat> trgl, vector<arma::Mat<GLfloat>> TransfList, int iter)
 {
     vector<vector<int>> Tlist;
     arma::Mat<GLfloat> t;
@@ -165,7 +162,7 @@ void dividePolygoneIterative2(arma::Mat<GLfloat> trgl, vector<arma::Mat<GLfloat>
             t = TransfList[*i] * t;
         }
 
-        //displayPolygone(t);
+        displayPolygone(t);
     }
 }
 
@@ -180,19 +177,19 @@ void display()
     cout <<"\n N = " << iterations <<"\n" << endl;
 
     auto start = high_resolution_clock::now(); 
-    dividePolygone(Triangle2, transfMat, iterations);
+    ifsRecursif(Triangle2, transfMat, iterations);
     auto stop = high_resolution_clock::now(); 
     auto duration = duration_cast<microseconds>(stop - start)*pow(10,-6);
     cout <<"Recursive : " << duration.count() << endl;
 
     start = high_resolution_clock::now(); 
-    dividePolygoneIterative(Triangle2, transfMat, iterations);
+    ifsIteratif1(Triangle2, transfMat, iterations);
     stop = high_resolution_clock::now(); 
     duration = duration_cast<microseconds>(stop - start)*pow(10,-6);
     cout <<"Iterative 1 : " << duration.count() << endl;
 
     start = high_resolution_clock::now();
-    dividePolygoneIterative2(Triangle2, transfMat, iterations);
+    ifsIteratif2(Triangle2, transfMat, iterations);
     stop = high_resolution_clock::now();
     duration = duration_cast<microseconds>(stop - start)*pow(10,-6);
     cout <<"Iterative 2 : " << duration.count() << endl; 
