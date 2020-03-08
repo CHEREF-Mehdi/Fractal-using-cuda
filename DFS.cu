@@ -20,18 +20,13 @@ __global__ void fill_cases(short* result, size_t start, size_t value){
 
 __global__ void fillByLevel(short* result, size_t dim, size_t level, size_t fill_size, size_t fill_offset, size_t global_offset) {
 	if (level <= 0) return;
-	//fill buffer result by level
+
 	short value = threadIdx.x;
 	size_t start = fill_size * value + fill_offset + global_offset;
 	size_t end = start + fill_size;
-	//printf("start: %d == end: %d\n", start, end);
-	for (size_t i = start; i < end; i++) {
-		result[i] = value;
-		//printf("%d\n", start);
-	}
-	//fill_cases <<<1,end-start>>>(result,start,value);
+	for (size_t i = start; i < end; i++) result[i] = value;
 	fillByLevel <<<1, dim >> > (result, dim, level - 1, fill_size / dim, start, global_offset);
-	//__syncthreads();
+	__syncthreads();
 }
 
 __global__ void DFSKernel(short *result, size_t dim, size_t level, size_t _itr_size) {
@@ -39,15 +34,11 @@ __global__ void DFSKernel(short *result, size_t dim, size_t level, size_t _itr_s
 	size_t fill_size = powf(dim, level - 1);
 	size_t start = fill_size * value;
 	size_t end = start + fill_size;
-	//printf("start: %d == end: %d\n", start, end);
-	for (size_t i = start; i < end; i++) {
-		result[i] = value;
-		//printf("%d\n", start);
-	}
-	//fill_cases <<<1,end-start>>>(result,start,value);
+	for (size_t i = start; i < end; i++) result[i] = value;
+	
     
 	fillByLevel << <1, dim >> > (result, dim, level - 1, fill_size / dim, start, powf(dim, level));
-	//__syncthreads();
+	__syncthreads();
 }
 
 cudaError_t DFS(short*, size_t, size_t, size_t, size_t);
