@@ -80,7 +80,7 @@ int main(void)
     
     setUpCamera();
 
-	//create and initialize a VBO
+	// initialize a VBO
 	points_vbo = 0;
 	// generate 1 VBO buffer
 	glGenBuffers(1, &points_vbo); 
@@ -174,7 +174,7 @@ __global__ void IFSkernel(float *ver,short level,unsigned short dim, unsigned in
 	}
 
 	for(short i=0;i<3;i++)
-	    for(short j=0;j<3;j++) ver[N*9+i*3+j]=poly[i+j*3];	 	
+	    for(short j=0;j<3;j++) ver[N*d_sizeV+i*3+j]=poly[i+j*3];	 	
 }
 
 
@@ -183,7 +183,9 @@ cudaError_t DFS(int threads,unsigned int threadPerblock,unsigned int block,unsig
 	cudaError_t cudaStatus;	
 	
 	cudaMemcpyToSymbol(d_v, h_v, sizeof(float)*sizeV);
+
 	cudaMemcpyToSymbol(d_tl, h_tl, sizeof(float)*sizeTL);
+	
 	cudaMemcpyToSymbol(d_offsetT, h_tlSize, sizeof(short)*dim);
 	cudaMemcpyToSymbol(d_sizeV, &sizeV, sizeof(short));
 
