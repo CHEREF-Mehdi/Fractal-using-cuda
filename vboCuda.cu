@@ -17,7 +17,7 @@ GLuint points_vbo;
 float* d_vbo_ptr = 0;
 
 const unsigned short dim=3; //nbr transformation
-const short level=11; //nbr iteration
+const short level=5; //nbr iteration
 const unsigned short sizeV=9; //size of polygone 
 #define sizeTL (27) //size of transformation
 
@@ -56,7 +56,17 @@ int main(void)
 	unsigned short mode=threads%maxThreadPerblock;
 	size_t offset=0;
 	unsigned int threadPerblock;
-    
+	
+    if(blocks==0){
+        blocks=1;
+        threadPerblock=threads;		
+    }else{
+        threadPerblock=maxThreadPerblock;
+        if(mode!=0){
+            offset=blocks*maxThreadPerblock;
+        }
+    }
+
     GLFWwindow* window;
 
     /* Initialize the library */
@@ -90,15 +100,7 @@ int main(void)
 	glBufferData(GL_ARRAY_BUFFER, threads*9 * sizeof(float), 0, GL_DYNAMIC_DRAW);
 
     
-    if(blocks==0){
-        blocks=1;
-        threadPerblock=threads;		
-    }else{
-        threadPerblock=maxThreadPerblock;
-        if(mode!=0){
-            offset=blocks*maxThreadPerblock;
-        }
-    }
+    
 
     std::cout << "Iteration : " << level << std::endl;
     std::cout << "nbr Transformations : " << dim << std::endl;	
@@ -114,25 +116,24 @@ int main(void)
     auto duration = duration_cast<microseconds>(stop - start)*pow(10,-6);
     cout <<"\nExecution time : " << duration.count() << "\n";
     
-    
+	glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, points_vbo);
+	glVertexAttribPointer(
+		0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
+		3,                  // size
+		GL_FLOAT,           // type
+		GL_FALSE,           // normalized?
+		0,                  // stride
+		(void*)0            // array buffer offset
+	);
+
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {        
         glClear(GL_COLOR_BUFFER_BIT);
-
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, points_vbo);
-        glVertexAttribPointer(
-        0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
-        3,                  // size
-        GL_FLOAT,           // type
-        GL_FALSE,           // normalized?
-        0,                  // stride
-        (void*)0            // array buffer offset
-        );
+                        
         // Draw the triangle !
-        glDrawArrays(GL_TRIANGLES, 0, threads*3); // Starting from vertex 0; 3 vertices for each triangle
-        glDisableVertexAttribArray(0);        
+        glDrawArrays(GL_TRIANGLES, 0, threads*3); // Starting from vertex 0; 3 vertices for each triangle              
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
@@ -149,10 +150,11 @@ __global__ void IFSkernel(float *ver,short level,unsigned short dim, unsigned in
 	size_t N=threadIdx.x + blockIdx.x * blockDim.x + offset;
 	size_t n=N;	
 	unsigned short T;
+	short nbrVertex=d_sizeV/3;
 	float *poly=new float[d_sizeV];
 	float *p=new float[d_sizeV];
-	memcpy(p, d_v, sizeof(float)*d_sizeV);
-	short nbrVertex=d_sizeV/3;
+
+	memcpy(p, d_v, sizeof(float)*d_sizeV);	
 	
 	while(level>=0){
 		T=n/Bi;
@@ -172,8 +174,8 @@ __global__ void IFSkernel(float *ver,short level,unsigned short dim, unsigned in
 		level--;
 		memcpy(p, poly, sizeof(float)*d_sizeV);				
 	}
-
-	for(short i=0;i<3;i++)
+	//insert vertices in vbo
+	for(short i=0;i<nbrVertex;i++)
 	    for(short j=0;j<3;j++) ver[N*d_sizeV+i*3+j]=poly[i+j*3];	 	
 }
 
@@ -183,9 +185,7 @@ cudaError_t DFS(int threads,unsigned int threadPerblock,unsigned int block,unsig
 	cudaError_t cudaStatus;	
 	
 	cudaMemcpyToSymbol(d_v, h_v, sizeof(float)*sizeV);
-
 	cudaMemcpyToSymbol(d_tl, h_tl, sizeof(float)*sizeTL);
-	
 	cudaMemcpyToSymbol(d_offsetT, h_tlSize, sizeof(short)*dim);
 	cudaMemcpyToSymbol(d_sizeV, &sizeV, sizeof(short));
 
