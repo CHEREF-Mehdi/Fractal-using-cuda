@@ -25,13 +25,6 @@ const float h_v[sizeV]={1.0, 0.0, 0.0,
 						0.0, 1.0, 0.0, 
 						0.0, 0.0, 1.0
 						};
-
-float trgl[sizeV]= {1.0, 0.0, 0.0, 
-					0.0, 1.0, 0.0, 
-					0.0, 0.0, 1.0
-					};
-
-const short h_tlSize[dim]={0,9,18};
 const float h_tl[sizeTL] = {1.0, 0.5, 0.5,
 							0.0, 0.5, 0.0,
 							0.0, 0.0, 0.5,//T0
@@ -42,6 +35,7 @@ const float h_tl[sizeTL] = {1.0, 0.5, 0.5,
     						0.0, 0.5, 0.0,
      						0.5, 0.5, 1.0 //T2
 							};
+const short h_tlSize[dim]={0,9,18};
 
 __constant__ float d_v[sizeV];//device verteses
 __constant__ float d_tl[sizeTL];//device transformation list
@@ -49,7 +43,7 @@ __constant__ short d_offsetT[dim];
 __constant__ short d_sizeV;
 
 
-__global__ void DFSkernel(float *ver,short level,unsigned short dim, unsigned int Bi,size_t offset);
+__global__ void IFSkernel(float *ver,short level,unsigned short dim, unsigned int Bi,size_t offset);
 
 cudaError_t DFS(int thread, unsigned int threadPerblock,unsigned int block,unsigned int Bi,size_t offset,unsigned short mode);
 
@@ -86,7 +80,7 @@ int main(void)
     
     setUpCamera();
 
-	//create and initialize a VBO
+	// initialize a VBO
 	points_vbo = 0;
 	// generate 1 VBO buffer
 	glGenBuffers(1, &points_vbo); 
@@ -151,18 +145,19 @@ int main(void)
     return 0;
 }
 
-__global__ void DFSkernel(float *ver,short level,unsigned short dim, unsigned int Bi,size_t offset){	
+__global__ void IFSkernel(float *ver,short level,unsigned short dim, unsigned int Bi,size_t offset){	
 	size_t N=threadIdx.x + blockIdx.x * blockDim.x + offset;
 	size_t n=N;	
 	unsigned short T;
 	float *poly=new float[d_sizeV];
 	float *p=new float[d_sizeV];
 	memcpy(p, d_v, sizeof(float)*d_sizeV);
+	short nbrVertex=d_sizeV/3;
 	
 	while(level>=0){
 		T=n/Bi;
 
-		for (short r = 0; r < 3 ; r++)
+		for (short r = 0; r < nbrVertex ; r++)
 		{
 			for (short c = 0; c < 3 ; c++)
 			{							
@@ -179,7 +174,7 @@ __global__ void DFSkernel(float *ver,short level,unsigned short dim, unsigned in
 	}
 
 	for(short i=0;i<3;i++)
-	    for(short j=0;j<3;j++) ver[N*9+i*3+j]=poly[i+j*3];	 	
+	    for(short j=0;j<3;j++) ver[N*d_sizeV+i*3+j]=poly[i+j*3];	 	
 }
 
 
@@ -188,7 +183,9 @@ cudaError_t DFS(int threads,unsigned int threadPerblock,unsigned int block,unsig
 	cudaError_t cudaStatus;	
 	
 	cudaMemcpyToSymbol(d_v, h_v, sizeof(float)*sizeV);
+
 	cudaMemcpyToSymbol(d_tl, h_tl, sizeof(float)*sizeTL);
+	
 	cudaMemcpyToSymbol(d_offsetT, h_tlSize, sizeof(short)*dim);
 	cudaMemcpyToSymbol(d_sizeV, &sizeV, sizeof(short));
 
@@ -207,10 +204,10 @@ cudaError_t DFS(int threads,unsigned int threadPerblock,unsigned int block,unsig
 	    goto Error;
 	}
 
-	DFSkernel<<<block,threadPerblock >>> (d_vbo_ptr,level-1,dim,Bi,0);
+	IFSkernel<<<block,threadPerblock >>> (d_vbo_ptr,level-1,dim,Bi,0);
 	
 	if(offset!=0){
-		DFSkernel<<<1,mode >>> (d_vbo_ptr,level-1,dim,Bi,offset);
+		IFSkernel<<<1,mode >>> (d_vbo_ptr,level-1,dim,Bi,offset);
 	}
 
 	cudaStatus = cudaGetLastError();
