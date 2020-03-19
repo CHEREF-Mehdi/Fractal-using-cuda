@@ -55,7 +55,7 @@ cudaError_t DFS(short*, size_t, size_t, size_t, size_t);
 int main()
 {
 	const size_t dim = 3; //M
-	const size_t level = 11; //N
+	const size_t level = 8; //N
 
 	short* combinations;
 	size_t itr_size = pow(dim, level) * level;
